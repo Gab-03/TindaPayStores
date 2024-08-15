@@ -226,38 +226,49 @@ def create_graph(df, sheet_name, selected_pjp, selected_channel):
     if 'WK' in df.columns and 'USAGE VS. TOTAL PJP' in df.columns:
         # Filter data based on selected PJP and Channel
         filtered_df = df[(df['PJP'].isin(selected_pjp)) & (df['CHANNEL'].isin(selected_channel))]
-        
-        # Ensure 'USAGE VS. TOTAL PJP' is numeric
+
+        # Ensure 'USAGE VS. TOTAL PJP' and 'USAGE VS. TOTAL SAMPLE' are numeric
         filtered_df['USAGE VS. TOTAL PJP'] = pd.to_numeric(filtered_df['USAGE VS. TOTAL PJP'], errors='coerce')
+        filtered_df['USAGE VS. TOTAL SAMPLE'] = pd.to_numeric(filtered_df['USAGE VS. TOTAL SAMPLE'], errors='coerce')
 
-            # Check if filtered_df is not empty
+        # Check if filtered_df is not empty
         if not filtered_df.empty:
-            fig = px.line(
-                filtered_df,
-                x='WK',
-                y='USAGE VS. TOTAL PJP',
-                color='PJP',
-                line_dash='CHANNEL',
-                markers=True,
-                title=f"Usage Rate Over Weeks",
-                labels={'WK': 'Week', 'USAGE VS. TOTAL PJP': 'Usage vs. Total PJP'}
+            fig = go.Figure()
+
+            # Adding the trace for USAGE VS. TOTAL PJP
+            fig.add_trace(go.Scatter(
+                x=filtered_df['WK'],
+                y=filtered_df['USAGE VS. TOTAL PJP'],
+                mode='lines+markers+text',
+                name='Usage vs. Total PJP',
+                text=filtered_df['USAGE VS. TOTAL PJP'].apply(lambda x: f"{x:.2f}"),
+                textposition='top right',
+                line=dict(color='blue'),
+                marker=dict(size=8)
+            ))
+
+            # Adding the trace for USAGE VS. TOTAL SAMPLE
+            fig.add_trace(go.Scatter(
+                x=filtered_df['WK'],
+                y=filtered_df['USAGE VS. TOTAL SAMPLE'],
+                mode='lines+markers+text',
+                name='Usage vs. Total Sample',
+                text=filtered_df['USAGE VS. TOTAL SAMPLE'].apply(lambda x: f"{x:.2f}"),
+                textposition='top right',
+                line=dict(color='red'),
+                marker=dict(size=8)
+            ))
+
+            # Updating the layout for titles and axis labels
+            fig.update_layout(
+                title="Usage Rate Over Weeks",
+                xaxis_title="Week",
+                yaxis_title="Value",
+                legend_title="Metrics",
+                hovermode="x unified"
             )
-
-            # Apply text labels separately for each trace
-            for trace in fig.data:
-                # Filter the DataFrame for the corresponding PJP and CHANNEL for each trace
-                pjp_value = trace.name.split(', ')[0]
-                channel_value = trace.name.split(', ')[1]
-                filtered_trace_df = filtered_df[(filtered_df['PJP'] == pjp_value) & (filtered_df['CHANNEL'] == channel_value)]
-                
-                # Update the trace with specific text labels
-                trace.text = filtered_trace_df['USAGE VS. TOTAL PJP'].apply(lambda x: f"{x:.2f}").tolist()
-                trace.textposition = 'top right'
-                trace.mode = 'lines+markers+text'
-
-                # fig.update_traces(text=df['REPEAT'].apply(lambda x: f"{x:.2f}"), textposition='inside', selector=dict(name='REPEAT'))
-                # fig.update_traces(text=df['NEW'].apply(lambda x: f"{x:.2f}"), textposition='inside', selector=dict(name='NEW'))
     
+
     elif 'REPEAT' in df.columns:
         # Handle REPEAT and NEW columns
         filtered_df = df[(df['PJP'].isin(selected_pjp)) & (df['CHANNEL'].isin(selected_channel))]
@@ -445,8 +456,6 @@ def create_graph(df, sheet_name, selected_pjp, selected_channel):
             #     text=filtered_df[['Grew vs. Baseline (No. of Doors)', 'Did not grow vs. Baseline']].apply(lambda row: f"{row['Grew vs. Baseline (No. of Doors)']:.2f}" if pd.notnull(row['Grew vs. Baseline (No. of Doors)']) else '', axis=1),
             #     textposition='inside'
             # )
-    
-
 
     if fig is not None:
         fig.update_layout(xaxis=dict(tickmode='linear', dtick=1))  # Ensures every tick on x-axis is labeled
